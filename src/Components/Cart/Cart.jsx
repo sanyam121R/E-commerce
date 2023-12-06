@@ -3,8 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
 import { resetCart } from "../../redux/Slices/shoppingSlice";
 import ItemCard from "./ItemCard";
-import { cart_api } from "../../redux/api";
-import axios from "axios";
+import { createOrders, getOrders } from "../../redux/Slices/orderSlice";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -24,7 +23,7 @@ const Cart = () => {
   })
   const [showForm, setShowForm] = useState(false);
   const [allFormData, SetAllFormData]=useState([]);
-  const [orderProducts, setOrderProducts] = useState([]);
+  const [orderProducts, SetOrderProducts]=useState([]);
 
   const toggleModal = (e) => {
     e.preventDefault();
@@ -48,6 +47,16 @@ const Cart = () => {
       return price;
     });
     setTotalAmt(price);
+    
+    const data = products?.map(item => {
+      return ({
+        productId: item.productId,
+        quantity: item.quantity
+      })
+    })
+
+    SetOrderProducts(data);
+    
   }, [products]);
 
   useEffect(() => {
@@ -65,18 +74,24 @@ const Cart = () => {
     setUserInfo((prev)=>({...prev , [e.target.name]:e.target.value}))
   }
 
+  useEffect(()=> {
+    dispatch(createOrders(allFormData));
+    dispatch(getOrders({userId: user.userId}));
+  }, [allFormData]);
+
   const handleOnSubmitOrder = async (event) => {
     event.preventDefault();
     setShowForm(!showForm);
     
-    products.map((item) => {
-      setOrderProducts(prev=>([...prev, {productId: item.productId, quantity: item.quantity}]));
-    })
-    
-    
-    SetAllFormData({...userInfo, products: products})
-    // navigate('/orders');
+    await SetAllFormData({
+      userId:userInfo.userId,
+      address: userInfo.address,
+      contactNo: userInfo.phone,
+      products: orderProducts
+    });
+    navigate("/orders");
   };
+    
 
   return (
     <div className="w-[700px] mx-60 px-4">
